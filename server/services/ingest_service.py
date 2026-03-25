@@ -10,6 +10,7 @@ No financial math is performed here; that is Layer 2's responsibility.
 
 import json
 import re
+import time
 from datetime import date as Date, timedelta
 
 from fastapi import UploadFile
@@ -25,27 +26,29 @@ from models.document_models import (
 )
 
 # Strict system-level instruction — Gemini must not infer data absent from the document
-_PARSE_PROMPT = """You are a financial document parser. Extract every financial transaction visible in this document.
-
-Return ONLY a single valid JSON object matching this exact schema — no markdown, no prose, no extra keys:
+_PARSE_PROMPT = """You are a financial document parser specializing in Indian SME documents.
+Extract every financial transaction visible in this document.
+Return ONLY a single valid JSON object — no markdown, no prose, no extra keys:
 {
   "document_type": "<bank_statement|invoice|receipt>",
   "transactions": [
     {
-      "counterparty": "<string>",
-      "amount": <positive float>,
+      "counterparty": "<vendor or customer name>",
+      "amount": <positive float — always a number, never a string>,
       "date": "<YYYY-MM-DD>",
       "type": "<inflow|outflow>",
       "description": "<string>"
     }
   ]
 }
-
-Rules:
-- Do NOT infer, estimate, or add any data that is not explicitly present in the document.
-- If a field cannot be read, omit the transaction entirely rather than guessing.
-- Amounts must always be positive floats; use the "type" field to indicate direction.
-- Dates must be in ISO-8601 format (YYYY-MM-DD).
+Indian document rules:
+- Amounts written in Indian format (e.g. 1,05,200.00) must be converted to plain floats (105200.0).
+- GST line items (CGST, SGST, IGST) must be summed with the base amount into one transaction.
+- UPI transaction IDs, NEFT/IMPS/RTGS reference numbers should go in the description field.
+- Bank statement credit entries are inflow; debit entries are outflow.
+- Invoice amounts are outflow for the buyer; receivable invoices are inflow.
+- If a field cannot be read clearly, omit that transaction entirely — do not guess.
+- Dates must be ISO-8601 (YYYY-MM-DD). Convert DD/MM/YYYY or DD-MMM-YYYY formats.
 """
 
 # Duplicate detection window: transactions within ±3 days with same counterparty and amount
@@ -67,20 +70,23 @@ def _extract_json(raw: str) -> dict:
     # Remove ```json ... ``` wrappers if present
     cleaned = re.sub(r"```(?:json)?", "", raw).strip()
     try:
-        return json.loads(cleaned)
+        data = json.loads(cleaned)
     except json.JSONDecodeError as exc:
         raise ValueError(f"Gemini returned non-JSON output: {raw[:200]}") from exc
+    # Coerce amount to float — Gemini sometimes returns strings for Indian-formatted numbers
+    for tx in data.get("transactions", []):
+        if isinstance(tx.get("amount"), str):
+            tx["amount"] = float(tx["amount"].replace(",", "").replace("₹", "").strip())
+    return data
 
 
 def _check_duplicates(
     transactions: list[ParsedTransaction], business_id: str
 ) -> list[DuplicateFlag]:
-    """Compare parsed transactions against existing Supabase records.
+    """Compare parsed transactions against existing Supabase records using a single batch query.
 
-    Duplicate detection criteria:
-      - Same counterparty (case-insensitive)
-      - Same amount (exact float match)
-      - Due date within ±DUPLICATE_WINDOW_DAYS of the parsed date
+    Fetches all existing transactions within the date window in one query, then
+    matches in Python — avoids N separate Supabase round-trips for an N-row document.
 
     Args:
         transactions: List of transactions freshly parsed from the document.
@@ -90,32 +96,37 @@ def _check_duplicates(
         List of DuplicateFlag objects for any matched transactions.
     """
     supabase = get_supabase()
+    if not transactions:
+        return []
+
+    dates = [tx.transaction_date for tx in transactions]
+    window_start = (min(dates) - timedelta(days=_DUPLICATE_WINDOW_DAYS)).isoformat()
+    window_end = (max(dates) + timedelta(days=_DUPLICATE_WINDOW_DAYS)).isoformat()
+
+    result = (
+        supabase.table("transactions")
+        .select("id, counterparty, amount, due_date")
+        .eq("business_id", business_id)
+        .gte("due_date", window_start)
+        .lte("due_date", window_end)
+        .execute()
+    )
+    existing = result.data
+
     flags: list[DuplicateFlag] = []
-
     for idx, tx in enumerate(transactions):
-        window_start = (tx.transaction_date - timedelta(days=_DUPLICATE_WINDOW_DAYS)).isoformat()
-        window_end = (tx.transaction_date + timedelta(days=_DUPLICATE_WINDOW_DAYS)).isoformat()
-
-        result = (
-            supabase.table("transactions")
-            .select("id, counterparty, amount, due_date")
-            .eq("business_id", business_id)
-            .eq("amount", tx.amount)
-            .gte("due_date", window_start)
-            .lte("due_date", window_end)
-            .execute()
-        )
-
-        for row in result.data:
-            if row["counterparty"].lower() == tx.counterparty.lower():
+        for row in existing:
+            if (
+                row["counterparty"].lower() == tx.counterparty.lower()
+                and float(row["amount"]) == tx.amount
+            ):
                 flags.append(
                     DuplicateFlag(
                         transaction_index=idx,
                         matched_transaction_id=row["id"],
                         match_reason=(
-                            f"Existing record id={row['id']} has same counterparty "
-                            f"'{row['counterparty']}', amount={row['amount']}, "
-                            f"date={row['due_date']} (within ±{_DUPLICATE_WINDOW_DAYS} days)"
+                            f"Matches existing record: '{row['counterparty']}' "
+                            f"₹{row['amount']} on {row['due_date']}"
                         ),
                     )
                 )
@@ -147,18 +158,31 @@ async def parse_document(file: UploadFile, business_id: str) -> IngestResponse:
     file_bytes = await file.read()
     mime_type = file.content_type or "application/octet-stream"
 
-    response = client.models.generate_content(
-        model=FLASH_MODEL,
-        contents=[
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_text(text=_PARSE_PROMPT),
-                    types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+    # Retry up to 3 attempts with 1-second delay between failures
+    last_error: Exception | None = None
+    response = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=FLASH_MODEL,
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_text(text=_PARSE_PROMPT),
+                            types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+                        ],
+                    )
                 ],
             )
-        ],
-    )
+            break  # Success — exit retry loop
+        except Exception as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(1)
+
+    if response is None:
+        raise ValueError(f"Gemini parsing failed after 3 attempts: {last_error}")
 
     raw_json = _extract_json(response.text)
 
@@ -177,8 +201,23 @@ async def parse_document(file: UploadFile, business_id: str) -> IngestResponse:
 
     duplicate_flags = _check_duplicates(transactions, business_id)
 
+    # Save a record to the documents table so the confirm endpoint can update its status
+    supabase = get_supabase()
+    doc_insert = (
+        supabase.table("documents")
+        .insert({
+            "business_id": business_id,
+            "document_type": document_type,
+            "parse_status": "parsed",
+            "parsed_json": raw_json,
+        })
+        .execute()
+    )
+    document_id = doc_insert.data[0]["id"] if doc_insert.data else None
+
     return IngestResponse(
         document_type=document_type,
         transactions=transactions,
         duplicate_flags=duplicate_flags,
+        document_id=document_id,
     )

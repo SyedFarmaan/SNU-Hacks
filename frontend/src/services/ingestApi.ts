@@ -14,8 +14,21 @@ export interface DuplicateFlag {
 
 export interface IngestResponse {
   document_type: 'bank_statement' | 'invoice' | 'receipt';
+  document_id: string | null;
   transactions: ParsedTransaction[];
   duplicate_flags: DuplicateFlag[];
+}
+
+export interface ConfirmRequest {
+  business_id: string;
+  document_type: 'bank_statement' | 'invoice' | 'receipt';
+  transactions: ParsedTransaction[];
+  document_id: string | null;
+}
+
+export interface ConfirmResponse {
+  inserted_count: number;
+  transaction_ids: string[];
 }
 
 export async function uploadDocument(
@@ -37,4 +50,21 @@ export async function uploadDocument(
   }
 
   return response.json() as Promise<IngestResponse>;
+}
+
+export async function confirmTransactions(
+  payload: ConfirmRequest
+): Promise<ConfirmResponse> {
+  const res = await fetch('http://localhost:8000/api/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Confirm failed (${res.status}): ${err}`);
+  }
+
+  return res.json() as Promise<ConfirmResponse>;
 }

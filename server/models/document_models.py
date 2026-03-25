@@ -38,3 +38,26 @@ class IngestResponse(BaseModel):
         default_factory=list,
         description="Transactions that appear to already exist in Supabase",
     )
+    document_id: str | None = Field(
+        None, description="UUID of the newly created documents table record"
+    )
+
+
+class ConfirmRequest(BaseModel):
+    """Input to the /confirm endpoint: a reviewed list of transactions to persist."""
+
+    business_id: str = Field(..., description="UUID of the owning business")
+    document_type: Literal["bank_statement", "invoice", "receipt"]
+    transactions: list[ParsedTransaction] = Field(
+        ..., description="User-reviewed and edited final transaction list"
+    )
+    document_id: str | None = Field(
+        None, description="Optional UUID of the documents table record to mark as confirmed"
+    )
+
+
+class ConfirmResponse(BaseModel):
+    """Output of /confirm: count of rows inserted."""
+
+    inserted_count: int
+    transaction_ids: list[str]
