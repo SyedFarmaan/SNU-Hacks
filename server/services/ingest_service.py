@@ -14,6 +14,8 @@ from datetime import date as Date, timedelta
 
 from fastapi import UploadFile
 
+from google.genai import types
+
 from core.gemini_client import get_client, FLASH_MODEL
 from core.supabase_client import get_supabase
 from models.document_models import (
@@ -148,8 +150,13 @@ async def parse_document(file: UploadFile, business_id: str) -> IngestResponse:
     response = client.models.generate_content(
         model=FLASH_MODEL,
         contents=[
-            _PARSE_PROMPT,
-            {"mime_type": mime_type, "data": file_bytes},
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(text=_PARSE_PROMPT),
+                    types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+                ],
+            )
         ],
     )
 

@@ -5,10 +5,10 @@ from core.config import settings
 _client: genai.Client | None = None
 
 # Layer 1: document OCR/parsing — Flash is fast and cheap for structured extraction
-FLASH_MODEL = "gemini-1.5-flash"
+FLASH_MODEL = "gemini-2.5-flash"
 
 # Layer 4: chain-of-thought reasoning and email drafting — Pro for quality output
-PRO_MODEL = "gemini-1.5-pro"
+PRO_MODEL = "gemini-2.5-pro"
 
 
 def get_client() -> genai.Client:

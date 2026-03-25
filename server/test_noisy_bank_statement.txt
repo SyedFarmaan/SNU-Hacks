@@ -1,0 +1,21 @@
+===============================================
+AXIS BANK CORPARATE INTERNET BANKING
+STATEMENT OF ACCOUNT FOR PERIOD: 01-MAR-2026 to 15-MAR-2026
+CUSTOMER NAME: RIYA'S RESTAURANT LLP
+BRANCH: NEW DELHI KORMANGLA
+===============================================
+Date         | Particulars / Narration            | Withdrawals (Dr) | Deposits (Cr) | Balance 
+-----------------------------------------------------------------------------------------------
+01 Mar 26    | OPENING BALANCE                    |                  |               |  42,000.00
+03/03/2026   | NEFT-HDFC0001234-RELIANCE FRESH    |   12,500.50      |               |  29,499.50
+             | (Vegetable supplies weekly)        |                  |               |
+05-03-26     | UPI/P2M/PAYTM/ZOMATO SETTLEMENT    |                  |    8,450.00   |  37,949.50
+March 08     | RTGS-RENT-MARCH-MALL-MANAGEMENT    |   60,000.00      |               | -22,050.50
+10/03/2026   | CASH DEPOSIT BR 411                |                  |   15,000.00   |  -7,050.50
+12-Mar-2026  | POS PUR/MCDONALDS/NEW DELHI        |      450.00      |               |  -7,500.50
+14 Mar 26    | IMPS/P2A/839102/SALARY-RAHUL       |   18,000.00      |               | -25,500.50
+
+*** END OF STATEMENT ***
+System generated document. No signature required.
+If you have any queries, contact 1800-419-5959 or visit nearest branch.
+Page 1 of 1
