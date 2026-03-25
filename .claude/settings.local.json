@@ -5,7 +5,8 @@
       "Bash(SUPABASE_URL=https://test.supabase.co SUPABASE_KEY=test GEMINI_API_KEY=test ./venv/Scripts/python -c \":*)",
       "Bash(where python:*)",
       "Bash(where node:*)",
-      "Bash(where npm:*)"
+      "Bash(where npm:*)",
+      "Bash(find /c/Users/syedf/OneDrive/Desktop/SNU-Hacks/frontend/src -name *.ts -o -name *.tsx)"
     ]
   }
 }

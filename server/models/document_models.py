@@ -43,6 +43,13 @@ class IngestResponse(BaseModel):
     )
 
 
+class ChatIngestRequest(BaseModel):
+    """Input to /chat-ingest: a free-text transaction description from the chatbot."""
+
+    message: str = Field(..., description="Natural-language transaction description")
+    business_id: str = Field(..., description="UUID of the owning business")
+
+
 class ConfirmRequest(BaseModel):
     """Input to the /confirm endpoint: a reviewed list of transactions to persist."""
 

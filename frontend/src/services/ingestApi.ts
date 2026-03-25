@@ -68,3 +68,35 @@ export async function confirmTransactions(
 
   return res.json() as Promise<ConfirmResponse>;
 }
+
+export interface ChatIngestRequest {
+  message: string;
+  business_id: string;
+}
+
+/**
+ * NLP Chat-to-Ledger ingestion stub.
+ * Accepts a natural-language expense string and returns the same IngestResponse
+ * schema as uploadDocument, so it feeds identically into the data matrix.
+ *
+ * Backend contract: POST /api/chat-ingest
+ *   body: { message: string, business_id: string }
+ *   response: IngestResponse
+ */
+export async function parseChatMessage(
+  message: string,
+  businessId: string
+): Promise<IngestResponse> {
+  const res = await fetch('http://localhost:8000/api/chat-ingest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, business_id: businessId } satisfies ChatIngestRequest),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`NLP parsing failed (${res.status}): ${err}`);
+  }
+
+  return res.json() as Promise<IngestResponse>;
+}

@@ -374,7 +374,49 @@ Each scenario shows: days_to_zero delta, total penalty cost, relationships at ri
 
 ---
 
-## 11. Confirmed Decisions
+## 11. Layer 2 — Frontend Integration
+
+### Route Wiring
+
+The `/forecast` route in the React frontend (`frontend/src/App.tsx`) renders `CashFlowForecast.tsx`, which is now fully wired to `POST /api/runway` via `frontend/src/services/runwayApi.ts`.
+
+### API Service (`runwayApi.ts`)
+
+| Export | Purpose |
+|---|---|
+| `TimelineEntry` | Interface matching the `timeline` array items in `RunwayResponse` |
+| `RunwayResponse` | Full typed interface for all 20+ fields returned by the runway endpoint |
+| `RunwayRequest` | `{ business_id: string }` — the POST body shape |
+| `fetchRunway(businessId)` | POSTs to `http://localhost:8000/api/runway`; throws on non-OK response |
+
+### Page Section Mapping (`CashFlowForecast.tsx`)
+
+| Page Section | `RunwayResponse` Fields Used |
+|---|---|
+| Emergency banner | `days_to_zero`, `liquidity_gap` |
+| Financial Health Score gauge | `health_score` |
+| Days to Zero card | `days_to_zero` |
+| Available Cash card | `current_cash_balance`, `total_payables` |
+| Cash Flow Forecast chart (`RunwayChart`) | `timeline`, `current_cash_balance` |
+| Horizon Snapshots row | `cash_at_7d`, `cash_at_30d`, `cash_at_60d` |
+| Burn Rate cards | `gross_burn_monthly`, `net_burn_monthly`, `cash_coverage_days`, `runway_months` |
+| Obligation Pressure band | `overdue_receivables_pct`, `overdue_payables_pct`, `penalty_payables_pct`, `counterparty_concentration_risk`, `cash_flow_volatility` |
+| Active Timeline table | `timeline` (all entries, no pagination) |
+
+### Running Locally
+
+```bash
+# Backend
+cd server && uvicorn main:app --reload --port 8000
+
+# Frontend
+cd frontend && npm run dev
+# Navigate to http://localhost:5173/forecast
+```
+
+---
+
+## 12. Confirmed Decisions
 
 | Decision | Choice |
 |---|---|

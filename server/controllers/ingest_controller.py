@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException
 
-from models.document_models import ConfirmRequest, ConfirmResponse, IngestResponse
+from models.document_models import ChatIngestRequest, ConfirmRequest, ConfirmResponse, IngestResponse
+from services.chat_ingest_service import parse_chat_message
 from services.confirm_service import confirm_transactions
 from services.ingest_service import parse_document
 
@@ -43,6 +44,25 @@ async def ingest_document(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return result
+
+
+@router.post(
+    "/chat-ingest",
+    response_model=IngestResponse,
+    summary="Parse a natural-language transaction message into structured transactions",
+)
+async def chat_ingest(request: ChatIngestRequest) -> IngestResponse:
+    """Layer 1 (NLP path): accept a free-text message and extract transactions via Gemini Flash.
+
+    Accepts JSON body: { message: string, business_id: string }
+    Returns the same IngestResponse schema as the file-upload path.
+    """
+    try:
+        return await parse_chat_message(
+            message=request.message, business_id=request.business_id
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/confirm", response_model=ConfirmResponse, summary="Persist reviewed transactions")
