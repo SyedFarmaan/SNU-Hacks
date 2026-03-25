@@ -11,6 +11,13 @@ The system ingests fragmented financial inputs, computes a real-time liquidity r
 
 **Core Design Rule:** Layers 1–3 are pure deterministic logic. LLM (Gemini) is used **only** in Layer 1 (document parsing) and Layer 4 (output translation). No financial math is delegated to LLMs.
 
+### Repository Hygiene Note (2026-03-25)
+
+- Added a root-level `.gitignore` tailored for this monorepo setup:
+- Python/FastAPI ignores (`__pycache__`, pytest/mypy/ruff caches, coverage, virtual environments).
+- React/Vite ignores (`node_modules`, Vite build outputs, TypeScript build info).
+- Local environment and editor artifacts (`.env*`, local overrides, IDE/OS files).
+
 ---
 
 ## 2. Feasibility Analysis & Honest Assessment

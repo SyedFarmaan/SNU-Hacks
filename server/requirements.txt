@@ -1,7 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
 supabase
 python-dotenv
-google-generativeai
+google-genai
 pydantic
 pydantic-settings
+python-multipart
+pytest
