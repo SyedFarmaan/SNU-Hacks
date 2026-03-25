@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus, ArrowUp, ArrowDown, Search, Filter, ChevronLeft, ChevronRight, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function ObligationsLedger() {

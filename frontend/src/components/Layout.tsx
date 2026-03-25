@@ -1,9 +1,10 @@
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Receipt, FileText, Wallet, LineChart } from 'lucide-react';
-import { clsx } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export function cn(...inputs) {
+export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
@@ -15,7 +16,7 @@ const navItems = [
     { name: 'Cash Flow Forecast', path: '/forecast', icon: LineChart },
 ];
 
-export default function Layout({ children }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
 
     return (

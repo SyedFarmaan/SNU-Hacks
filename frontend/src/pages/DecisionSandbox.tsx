@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, Sparkles, Shield, PenTool, Cloud, Building2, Megaphone, Info } from 'lucide-react';
 
 export default function DecisionSandbox() {
@@ -8,7 +8,12 @@ export default function DecisionSandbox() {
         meta: false
     });
 
-    const toggle = (key) => setSelected(prev => ({ ...prev, [key]: !prev[key] }));
+    const toggle = (key: keyof typeof selected) => {
+        setSelected(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    }
 
     return (
         <div className="max-w-7xl mx-auto px-8 py-10 animate-in fade-in duration-500">

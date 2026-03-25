@@ -1,4 +1,3 @@
-import React from 'react';
 import { UploadCloud, FileText, ArrowRight } from 'lucide-react';
 
 export default function DocumentIntelligence() {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertTriangle, Wallet, AlertCircle, Zap } from 'lucide-react';
 
 export default function CashFlowForecast() {

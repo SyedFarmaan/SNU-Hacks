@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Brain, ListTodo, Landmark, Eye, PlayCircle, Mail, Edit, Paperclip, Info, X, CheckCircle2 } from 'lucide-react';
 
 export default function ActionExecution() {
