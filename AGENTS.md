@@ -16,7 +16,7 @@
 **What's Next**: Database schema setup (Supabase), FastAPI & React project scaffolding, Layer 2 Math Engine.
 
 ## Context & Documentation
-- **Source of Truth**: The `docs/` folder and `architecture.md` are the sources of truth. 
+- **Source of Truth**: The `server/docs/` folder and `architecture.md` are the sources of truth. 
 - **Future Plans**: Keep future plans in `architecture.md` or a `ROADMAP.md`. Maintain current state docs in `docs/`.
 
 ## Dev environment tips
