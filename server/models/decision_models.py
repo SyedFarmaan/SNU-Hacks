@@ -1,4 +1,11 @@
+"""Pydantic models for Layer 3 — Decision Sandbox (Scenario Branching).
+
+DecideResponse is the single output contract for the /api/decide endpoint.
+All fields are deterministic; no LLM values are present here.
+"""
+
 from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -17,24 +24,45 @@ class Obligation(BaseModel):
         default=0.0, ge=0,
         description="Fractional daily penalty rate (e.g. 0.02 = 2% per day)",
     )
-    # Only used in scenario_c response — not required on input
     include: bool | None = Field(
-        None, description="Scenario C toggle: True = pay, False = defer"
+        None, description="Frontend toggle: True = pay, False = defer"
     )
 
 
 class Scenario(BaseModel):
-    """The output for one pay/defer scenario."""
+    """The output for one evaluated strategy.
 
-    pay_list: list[Obligation]
-    defer_list: list[Obligation]
-    days_to_zero_delta: int = Field(
-        ...,
-        description="Change in days_to_zero versus the current baseline (positive = extended runway)",
+    Fields:
+      - name:            Human-readable strategy label.
+      - actions:         Chronological list of decisions made (pay / defer).
+      - min_balance:     Lowest projected cash balance during the simulation.
+      - total_penalties:  Total penalty cost accrued from all deferrals
+                         (penalty_rate * amount * defer_days).
+      - pay_list:        Obligations paid at their original (or only) due date.
+      - defer_list:      Obligations that were deferred at least once.
+    """
+
+    name: str = Field(
+        ..., description="Strategy name: Baseline, Survival, or Smart Penalty Minimization"
     )
-    total_penalty_if_deferred: float = Field(
+    actions: list[str] = Field(
+        default_factory=list,
+        description="Human-readable list of actions (e.g. 'Deferred Invoice A by 15 days')",
+    )
+    min_balance: float = Field(
+        ..., description="Lowest projected cash balance during the simulation (INR)"
+    )
+    total_penalties: float = Field(
         ..., ge=0,
-        description="Estimated daily penalty cost for all obligations in defer_list",
+        description="Total penalty cost accrued from deferrals (penalty_rate × amount × defer_days)",
+    )
+    pay_list: list[Obligation] = Field(
+        default_factory=list,
+        description="Obligations paid at their original due date (never deferred)",
+    )
+    defer_list: list[Obligation] = Field(
+        default_factory=list,
+        description="Obligations deferred to a later date",
     )
 
 
@@ -45,12 +73,29 @@ class DecideRequest(BaseModel):
 
 
 class DecideResponse(BaseModel):
-    """Output of Layer 3: three deterministic pay/defer scenarios."""
+    """Output of Layer 3: three deterministic strategies with a recommendation.
 
-    available_cash: float = Field(..., description="Cash balance at decision time")
-    scenario_a: Scenario = Field(..., description="Greedy Optimal: sort by score, pay until cash runs out")
-    scenario_b: Scenario = Field(..., description="Conservative: pay all none-flexibility, defer the rest")
+    Scenarios:
+      - scenario_a: Baseline — pay all on time.
+      - scenario_b: Survival — defer medium/high flexibility, hoard cash.
+      - scenario_c: Smart Penalty Minimization — greedy day-by-day deferral.
+    """
+
+    available_cash: float = Field(..., description="Cash balance at decision time (INR)")
+    scenario_a: Scenario = Field(
+        ..., description="Baseline: pay every obligation on its due date"
+    )
+    scenario_b: Scenario = Field(
+        ..., description="Survival: defer all medium/high flexibility items by 30 days"
+    )
     scenario_c: Scenario = Field(
+        ..., description="Smart Penalty Minimization: greedy day-by-day deferral simulation"
+    )
+    recommended_scenario: str = Field(
         ...,
-        description="Custom: all obligations with include toggles; frontend lets user flip them",
+        description=(
+            "Name of the winning strategy. Picks the strategy that keeps "
+            "min_balance >= 0 with the lowest total_penalties; if all go "
+            "negative, picks the highest min_balance."
+        ),
     )

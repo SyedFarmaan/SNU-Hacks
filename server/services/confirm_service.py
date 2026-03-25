@@ -39,7 +39,7 @@ async def confirm_transactions(request: ConfirmRequest) -> ConfirmResponse:
             "due_date": tx.transaction_date.isoformat(),
             "type": tx.transaction_type,
             "notes": tx.raw_description,
-            "status": "pending",
+            "status": "paid" if request.document_type == "bank_statement" else "pending",
             "source": request.document_type,
             "category": category,
             "flexibility": default_flexibility,
