@@ -1,190 +1,396 @@
-import { UploadCloud, FileText, ArrowRight } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { UploadCloud, FileText, ArrowRight, AlertTriangle } from 'lucide-react';
+import {
+  uploadDocument,
+  type IngestResponse,
+} from '../services/ingestApi';
+
+const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+
+type Status = 'idle' | 'uploading' | 'parsed' | 'error';
+
+function formatINR(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function docTypeLabel(type: IngestResponse['document_type']): string {
+  const map: Record<IngestResponse['document_type'], string> = {
+    bank_statement: 'Bank Statement',
+    invoice: 'Invoice',
+    receipt: 'Receipt',
+  };
+  return map[type];
+}
 
 export default function DocumentIntelligence() {
-    return (
-        <div className="max-w-[1440px] mx-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start animate-in fade-in duration-500">
-            {/* Left Column: Input (40%) */}
-            <section className="lg:col-span-5 flex flex-col gap-8">
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-on-surface">Document Intelligence</h1>
-                    <p className="text-on-surface-variant text-sm">Upload and automate data extraction for tax compliance.</p>
-                </div>
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<Status>('idle');
+  const [result, setResult] = useState<IngestResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-                {/* Upload Zone */}
-                <div className="bg-surface-container-low p-12 flex flex-col items-center justify-center text-center rounded-sm transition-all hover:bg-[#e8edff] hover:cursor-pointer group relative">
-                    <div className="absolute inset-0 border-2 border-dashed border-[#0052cc] opacity-50 rounded-sm"></div>
-                    <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mb-4 group-hover:scale-105 transition-transform z-10">
-                        <UploadCloud className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-on-surface mb-1 z-10">Drag and drop invoice here</h3>
-                    <p className="text-sm text-on-surface-variant z-10">Support PDF, PNG, JPG (Max 10MB)</p>
-                    <button className="mt-4 px-4 py-2 bg-white border-none text-primary text-sm font-semibold rounded-sm shadow-sm hover:bg-gray-50 cursor-pointer transition-all z-10">
-                        Browse Files
-                    </button>
-                </div>
+  async function handleFile(selected: File) {
+    setFile(selected);
+    setStatus('uploading');
+    setResult(null);
+    setError(null);
+    try {
+      const data = await uploadDocument(selected, BUSINESS_ID);
+      setResult(data);
+      setStatus('parsed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected error occurred.');
+      setStatus('error');
+    }
+  }
 
-                {/* Invoice Thumbnail */}
-                <div className="bg-surface-container-low rounded-sm p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Active Document</span>
-                        <span className="text-xs text-primary font-medium hover:underline cursor-pointer">Preview Fullscreen</span>
-                    </div>
-                    <div className="relative group overflow-hidden rounded-sm bg-white border border-[#c3c6d6]/30">
-                        <img
-                            alt="GST Invoice"
-                            className="w-full h-64 object-cover object-top opacity-90 group-hover:scale-[1.02] transition-transform duration-500"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPZqLiTvk2UoKh66ZcxF83KcmeRGJWTMwJb4dB0RCf-Fn1Vx2f2MUcR60xeZF2OuH5lB4n8W8pB_AZm1MTVwb8uI-sOPNUegDuVqRaxQSZ4AXuUMqgAKyDm3AiuHu4HM3Adag5z9C3cAd7CE_sWj07LlK1mD3rJeEPx2eHmx7F-nDc-uJeJRBfYBjYxX9BYM_-J9Fb2H5r7-EmbVz1T0QhgRRIyDrhrAOhxgz50Lmdl2zlvd1Oc7JewNCMR81mywGA_ur153EajjQ"
-                        />
-                        <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-on-surface-variant" />
-                            <span className="font-medium text-on-surface">GST_INV_2024_082.pdf</span>
-                        </div>
-                        <span className="text-on-surface-variant">1.2 MB</span>
-                    </div>
-                </div>
-            </section>
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0];
+    if (selected) handleFile(selected);
+  }
 
-            {/* Right Column: Data (60%) */}
-            <section className="lg:col-span-7 bg-white rounded-lg overflow-hidden border border-[#c3c6d6]/10 shadow-sm flex flex-col h-full min-h-[700px]">
-                <div className="p-6 border-b border-[#e8edff] flex justify-between items-center">
-                    <h2 className="text-xl font-bold tracking-tight text-on-surface">Parsed Results</h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-on-surface-variant">Confidence Score:</span>
-                        <div className="w-16 bg-[#e8edff] h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-[#36B37E] h-full w-[94%]"></div>
-                        </div>
-                        <span className="text-xs font-bold text-[#36B37E]">94%</span>
-                    </div>
-                </div>
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragOver(true);
+  }
 
-                {/* Data Table */}
-                <div className="flex-grow overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-secondary-container">
-                                <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Vendor</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Amount (₹)</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#e8edff]">
-                            {/* Row 1 */}
-                            <tr className="hover:bg-surface-container-low group transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-sm bg-[#e8edff] flex items-center justify-center font-bold text-primary text-xs">TI</div>
-                                        <div className="flex flex-col cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                            <span className="text-sm font-semibold text-on-surface">Tech-Innovate Pvt Ltd</span>
-                                            <span className="text-[10px] text-on-surface-variant">GSTIN: 27AAACT9832R1Z1</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                        <span className="text-sm font-medium text-on-surface">42,500.00</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-on-surface-variant">14 Aug 2024</td>
-                                <td className="px-6 py-4 text-sm text-on-surface">Service Invoice</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-purple-100 text-purple-700">AI Extracted</span>
-                                </td>
-                            </tr>
-                            {/* Row 2 */}
-                            <tr className="hover:bg-surface-container-low group transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-sm bg-[#e8edff] flex items-center justify-center font-bold text-primary text-xs">AS</div>
-                                        <div className="flex flex-col cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                            <span className="text-sm font-semibold text-on-surface">Azure Systems Inc</span>
-                                            <span className="text-[10px] text-on-surface-variant">GSTIN: 07AABCU1234F1Z5</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                        <span className="text-sm font-medium text-on-surface">12,890.50</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-on-surface-variant">12 Aug 2024</td>
-                                <td className="px-6 py-4 text-sm text-on-surface">Subscription</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-amber-50 text-[#FFAB00] border border-amber-100">Needs Review</span>
-                                </td>
-                            </tr>
-                            {/* Row 3 */}
-                            <tr className="hover:bg-surface-container-low group transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-sm bg-[#e8edff] flex items-center justify-center font-bold text-primary text-xs">RC</div>
-                                        <div className="flex flex-col cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                            <span className="text-sm font-semibold text-on-surface">Reliance Corp Ltd</span>
-                                            <span className="text-[10px] text-on-surface-variant">GSTIN: 27BCCDE9999K1Z2</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="cursor-text p-1 rounded-sm border border-transparent hover:border-primary-container transition-all">
-                                        <span className="text-sm font-medium text-on-surface">1,05,200.00</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-on-surface-variant">10 Aug 2024</td>
-                                <td className="px-6 py-4 text-sm text-on-surface">Raw Material</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-emerald-50 text-[#36B37E] border border-emerald-100">Confirmed</span>
-                                </td>
-                            </tr>
-                            {/* Row 4 */}
-                            <tr className="bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3 opacity-60">
-                                        <div className="w-8 h-8 rounded-sm bg-[#e8edff] flex items-center justify-center font-bold text-primary text-xs">MS</div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-on-surface">MacroSoft Logistics</span>
-                                            <span className="text-[10px] text-on-surface-variant">GSTIN: 29AABBB0000A1Z0</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium text-on-surface opacity-60">5,400.00</td>
-                                <td className="px-6 py-4 text-sm text-on-surface-variant opacity-60">08 Aug 2024</td>
-                                <td className="px-6 py-4 text-sm text-on-surface opacity-60">Logistics</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-emerald-50 text-[#36B37E] border border-emerald-100 opacity-60">Confirmed</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragOver(false);
+  }
 
-                {/* Footer Action Panel */}
-                <div className="p-6 bg-surface-container-low flex items-center justify-between border-t border-[#c3c6d6]/10">
-                    <div className="flex gap-4">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Total Extracted</span>
-                            <span className="text-lg font-bold text-on-surface">₹ 1,75,990.50</span>
-                        </div>
-                        <div className="w-[1px] h-10 bg-[#c3c6d6]/30"></div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Pending Review</span>
-                            <span className="text-lg font-bold text-[#FFAB00]">01</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button className="px-6 py-2.5 bg-[#d7e2ff] border-none text-primary font-semibold text-sm rounded shadow-sm hover:brightness-95 active:scale-95 transition-all cursor-pointer">
-                            Cancel
-                        </button>
-                        <button className="px-6 py-2.5 bg-[#0052cc] border-none text-white font-semibold text-sm rounded shadow-md hover:bg-primary transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
-                            <span>Confirm &amp; Add to Ledger</span>
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </section>
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) handleFile(dropped);
+  }
+
+  function handleReset() {
+    setFile(null);
+    setStatus('idle');
+    setResult(null);
+    setError(null);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  const duplicateIndexSet = new Set(
+    result?.duplicate_flags.map((f) => f.transaction_index) ?? []
+  );
+  const duplicateReasonMap = new Map(
+    result?.duplicate_flags.map((f) => [f.transaction_index, f.match_reason]) ?? []
+  );
+
+  const totalAmount = result?.transactions.reduce((sum, tx) => sum + tx.amount, 0) ?? 0;
+  const reviewCount = result?.duplicate_flags.length ?? 0;
+
+  return (
+    <div className="max-w-[1440px] mx-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start animate-in fade-in duration-500">
+      {/* Left Column (40%) */}
+      <section className="lg:col-span-5 flex flex-col gap-8">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-[#041b3c]">Document Intelligence</h1>
+          <p className="text-[#434654] text-sm">Upload and automate data extraction for tax compliance.</p>
         </div>
-    );
+
+        {/* Upload Zone — shown when idle */}
+        {status === 'idle' && (
+          <div
+            className="relative p-12 flex flex-col items-center justify-center text-center rounded-sm transition-all cursor-pointer group"
+            style={{ backgroundColor: isDragOver ? '#e8edff' : '#f1f3ff' }}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="absolute inset-0 border-2 border-dashed border-[#0052cc] opacity-50 rounded-sm pointer-events-none" />
+            <div className="w-16 h-16 rounded-full bg-[#cdddff] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform z-10">
+              <UploadCloud className="w-8 h-8 text-[#003d9b]" />
+            </div>
+            <h3 className="font-semibold text-[#041b3c] mb-1 z-10">Drag and drop invoice here</h3>
+            <p className="text-sm text-[#434654] z-10">Support PDF, PNG, JPG (Max 10MB)</p>
+            <button
+              className="mt-4 px-4 py-2 bg-white text-[#003d9b] text-sm font-semibold rounded-sm shadow-sm hover:bg-[#f1f3ff] cursor-pointer transition-all z-10"
+              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+            >
+              Browse Files
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={handleInputChange}
+            />
+          </div>
+        )}
+
+        {/* Uploading zone replacement */}
+        {status === 'uploading' && (
+          <div className="bg-[#f1f3ff] p-12 flex flex-col items-center justify-center text-center rounded-sm">
+            <div className="w-16 h-16 rounded-full bg-[#cdddff] flex items-center justify-center mb-4">
+              <UploadCloud className="w-8 h-8 text-[#003d9b] animate-pulse" />
+            </div>
+            <h3 className="font-semibold text-[#041b3c] mb-1">Uploading...</h3>
+            <p className="text-sm text-[#434654]">{file?.name}</p>
+          </div>
+        )}
+
+        {/* Parsed / Error: show idle zone again for re-upload */}
+        {(status === 'parsed' || status === 'error') && (
+          <div
+            className="relative p-8 flex flex-col items-center justify-center text-center rounded-sm transition-all cursor-pointer group bg-[#f1f3ff]"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            style={{ backgroundColor: isDragOver ? '#e8edff' : '#f1f3ff' }}
+          >
+            <div className="absolute inset-0 border-2 border-dashed border-[#0052cc] opacity-30 rounded-sm pointer-events-none" />
+            <p className="text-sm text-[#434654] z-10">Drop another file or click to replace</p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={handleInputChange}
+            />
+          </div>
+        )}
+
+        {/* Active Document Panel */}
+        <div className="bg-[#f1f3ff] rounded-sm p-4 flex flex-col gap-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#434654]">Active Document</span>
+          </div>
+          <div className="relative overflow-hidden rounded-sm bg-white border border-[#c3c6d6]/30 h-40 flex items-center justify-center">
+            {file ? (
+              <div className="flex flex-col items-center gap-2 p-4">
+                <FileText className="w-12 h-12 text-[#003d9b] opacity-60" />
+                <span className="text-xs text-[#434654] text-center break-all">{file.name}</span>
+              </div>
+            ) : (
+              <span className="text-sm text-[#434654] opacity-50">No document loaded</span>
+            )}
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#434654]" />
+              <span className="font-medium text-[#041b3c]">
+                {file ? file.name : '—'}
+              </span>
+            </div>
+            <span className="text-[#434654]">
+              {file ? formatFileSize(file.size) : ''}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Right Column (60%) */}
+      <section className="lg:col-span-7 bg-white rounded-sm overflow-hidden border border-[#c3c6d6]/10 shadow-[0_10px_40px_rgba(4,27,60,0.08)] flex flex-col min-h-[700px]">
+        {/* Header */}
+        <div className="p-6 border-b border-[#e8edff] flex justify-between items-center flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold tracking-tight text-[#041b3c]">Parsed Results</h2>
+            {status === 'parsed' && result && (
+              <span className="px-2 py-0.5 bg-[#d6e3ff] text-[#003d9b] text-xs font-semibold rounded-sm uppercase tracking-wide">
+                {docTypeLabel(result.document_type)}
+              </span>
+            )}
+          </div>
+          {status === 'parsed' && result && (
+            <span className="text-sm font-semibold text-[#36B37E]">
+              Extracted {result.transactions.length} transaction{result.transactions.length !== 1 ? 's' : ''}
+            </span>
+          )}
+          {status !== 'parsed' && status !== 'uploading' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[#434654]">Confidence Score:</span>
+              <div className="w-16 bg-[#e8edff] h-1.5 rounded-full overflow-hidden">
+                <div className="bg-[#36B37E] h-full w-0" />
+              </div>
+              <span className="text-xs font-bold text-[#434654]">—</span>
+            </div>
+          )}
+        </div>
+
+        {/* States: Uploading skeleton */}
+        {status === 'uploading' && (
+          <div className="flex-grow p-6 flex flex-col gap-4">
+            <p className="text-sm text-[#434654]">Parsing document with Gemini Flash...</p>
+            <div className="flex flex-col gap-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="animate-pulse flex gap-4 items-center">
+                  <div className="w-8 h-8 rounded-sm bg-[#f1f3ff]" />
+                  <div className="flex-1 h-4 rounded-sm bg-[#f1f3ff]" />
+                  <div className="w-24 h-4 rounded-sm bg-[#f1f3ff]" />
+                  <div className="w-20 h-4 rounded-sm bg-[#f1f3ff]" />
+                  <div className="w-16 h-4 rounded-sm bg-[#f1f3ff]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* State: Idle */}
+        {status === 'idle' && (
+          <div className="flex-grow flex items-center justify-center">
+            <div className="text-center p-10">
+              <FileText className="w-12 h-12 text-[#434654] opacity-20 mx-auto mb-3" />
+              <p className="text-sm text-[#434654]">Upload a document to see extracted transactions here.</p>
+            </div>
+          </div>
+        )}
+
+        {/* State: Error */}
+        {status === 'error' && (
+          <div className="flex-grow flex items-center justify-center p-8">
+            <div className="w-full max-w-md bg-[#fff5f5] rounded-sm p-6 flex flex-col gap-4 shadow-[0_10px_40px_rgba(4,27,60,0.08)]">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-[#FF5630] shrink-0" />
+                <h3 className="font-semibold text-[#041b3c]">Parsing Failed</h3>
+              </div>
+              <p className="text-sm text-[#434654]">{error}</p>
+              <button
+                className="self-start px-5 py-2 bg-[#e0e8ff] text-[#003d9b] text-sm font-semibold rounded-sm hover:brightness-95 transition-all cursor-pointer"
+                onClick={handleReset}
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* State: Parsed — Data Table */}
+        {status === 'parsed' && result && (
+          <div className="flex-grow overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-[#cdddff]">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Vendor</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Amount (₹)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.transactions.map((tx, idx) => {
+                  const isDuplicate = duplicateIndexSet.has(idx);
+                  const reason = duplicateReasonMap.get(idx);
+                  const rowBg = idx % 2 === 0 ? 'bg-[#f9f9ff]' : 'bg-[#f1f3ff]';
+                  return (
+                    <tr key={idx} className={`${rowBg} hover:bg-[#e8edff] transition-colors`}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-sm bg-[#e8edff] flex items-center justify-center font-bold text-[#003d9b] text-xs shrink-0">
+                            {getInitials(tx.counterparty)}
+                          </div>
+                          <span className="text-sm font-semibold text-[#041b3c]">{tx.counterparty}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-medium text-[#041b3c]">{formatINR(tx.amount)}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#434654]">{formatDate(tx.transaction_date)}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight"
+                          style={{
+                            backgroundColor: tx.transaction_type === 'inflow' ? '#e6f7f1' : '#fff0ec',
+                            color: tx.transaction_type === 'inflow' ? '#36B37E' : '#FF5630',
+                          }}
+                        >
+                          {tx.transaction_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {isDuplicate ? (
+                          <div className="relative group/tooltip inline-block">
+                            <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-amber-50 text-[#FFAB00] cursor-default">
+                              Possible Duplicate
+                            </span>
+                            {reason && (
+                              <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#1d3052] text-white text-xs rounded-sm px-3 py-2 shadow-[0_10px_40px_rgba(4,27,60,0.08)] hidden group-hover/tooltip:block z-20 leading-relaxed">
+                                {reason}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-tight bg-purple-100 text-purple-700">
+                            AI Extracted
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="p-6 bg-[#f1f3ff] flex items-center justify-between border-t border-[#c3c6d6]/10 flex-wrap gap-4">
+          <div className="flex gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#434654]">Total Extracted</span>
+              <span className="text-lg font-bold text-[#041b3c]">
+                {status === 'parsed' ? formatINR(totalAmount) : '—'}
+              </span>
+            </div>
+            <div className="w-[1px] h-10 bg-[#c3c6d6]/30" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#434654]">Pending Review</span>
+              <span className="text-lg font-bold text-[#FFAB00]">
+                {status === 'parsed' ? String(reviewCount).padStart(2, '0') : '—'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              className="px-6 py-2.5 bg-[#d7e2ff] text-[#003d9b] font-semibold text-sm rounded-sm hover:brightness-95 active:scale-95 transition-all cursor-pointer"
+              onClick={handleReset}
+            >
+              Cancel
+            </button>
+            {status === 'parsed' && (
+              <button className="px-6 py-2.5 bg-[#0052cc] text-white font-semibold text-sm rounded-sm hover:bg-[#003d9b] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+                <span>Confirm &amp; Add to Ledger</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
