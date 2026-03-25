@@ -17,6 +17,9 @@ The system ingests fragmented financial inputs, computes a real-time liquidity r
 - Python/FastAPI ignores (`__pycache__`, pytest/mypy/ruff caches, coverage, virtual environments).
 - React/Vite ignores (`node_modules`, Vite build outputs, TypeScript build info).
 - Local environment and editor artifacts (`.env*`, local overrides, IDE/OS files).
+- Added Supabase migration workflow assets under `supabase/`:
+- `supabase/migrations/*.sql` now defines schema, indexes/RLS policies, and Storage bucket setup.
+- `supabase/seed.sql` now contains idempotent demo data for Crisis/Stress/Stable scenarios.
 
 ---
 
