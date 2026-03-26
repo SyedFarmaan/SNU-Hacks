@@ -3,6 +3,7 @@ export interface ParsedTransaction {
   amount: number;
   transaction_date: string; // ISO-8601 YYYY-MM-DD
   transaction_type: 'inflow' | 'outflow';
+  category: string;
   raw_description: string;
 }
 

@@ -12,6 +12,10 @@ class ParsedTransaction(BaseModel):
     amount: float = Field(..., gt=0, description="Transaction amount in INR")
     transaction_date: Date = Field(..., description="Transaction or due date")
     transaction_type: Literal["inflow", "outflow"]
+    category: str = Field(
+        default="misc",
+        description="Obligation category: rent, loan_emi, utility, tax, supplier_invoice, contractor, marketing, subscription, misc",
+    )
     raw_description: str = Field(default="", description="Raw description from source document")
 
 

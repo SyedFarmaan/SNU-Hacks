@@ -365,7 +365,8 @@ export default function DocumentIntelligence() {
     return (
       orig.counterparty !== edited.counterparty ||
       orig.amount !== edited.amount ||
-      orig.transaction_date !== edited.transaction_date
+      orig.transaction_date !== edited.transaction_date ||
+      orig.category !== edited.category
     );
   }
 
@@ -693,7 +694,7 @@ export default function DocumentIntelligence() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-[#cdddff]">
-                  {['Vendor', 'Amount (₹)', 'Date', 'Type', 'Status'].map((h) => (
+                  {['Vendor', 'Amount (₹)', 'Date', 'Category', 'Type', 'Status'].map((h) => (
                     <th
                       key={h}
                       className="px-6 py-4 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider"
@@ -714,6 +715,9 @@ export default function DocumentIntelligence() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="h-4 bg-[#e8edff] rounded-sm w-24 animate-pulse" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-[#e8edff] rounded-sm w-20 animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
                       <div className="h-4 bg-[#e8edff] rounded-sm w-16 animate-pulse" />
@@ -832,7 +836,7 @@ export default function DocumentIntelligence() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-[#cdddff] sticky top-0">
-                    {['Vendor', 'Amount (₹)', 'Date', 'Type', 'Status', ''].map((h, i) => (
+                    {['Vendor', 'Amount (₹)', 'Date', 'Category', 'Type', 'Status', ''].map((h, i) => (
                       <th
                         key={i}
                         className="px-4 py-3.5 text-left text-xs font-bold text-[#51617e] uppercase tracking-wider whitespace-nowrap"
@@ -946,6 +950,19 @@ export default function DocumentIntelligence() {
                           )}
                         </td>
 
+                        {/* Category */}
+                        <td className="px-4 py-3">
+                          <select
+                            value={tx.category || 'misc'}
+                            onChange={(e) => commitEdit(realIndex, 'category', e.target.value)}
+                            className="text-[10px] font-bold uppercase tracking-tight bg-[#eef3ff] text-[#003d9b] border-none rounded-sm px-2 py-1 cursor-pointer focus:ring-1 focus:ring-[#003d9b] focus:outline-none"
+                          >
+                            {['rent','loan_emi','utility','tax','supplier_invoice','contractor','marketing','subscription','misc'].map(c => (
+                              <option key={c} value={c}>{c.replace('_', ' ')}</option>
+                            ))}
+                          </select>
+                        </td>
+
                         {/* Type */}
                         <td className="px-4 py-3">
                           <span
@@ -1000,7 +1017,7 @@ export default function DocumentIntelligence() {
                   })}
                   {filteredRows.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-10 text-center text-sm text-[#434654]">
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-[#434654]">
                         No transactions match this filter.
                       </td>
                     </tr>

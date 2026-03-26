@@ -37,10 +37,23 @@ Return ONLY a single valid JSON object — no markdown, no prose, no extra keys:
       "amount": <positive float — always a number, never a string>,
       "date": "<YYYY-MM-DD>",
       "type": "<inflow|outflow>",
+      "category": "<one of: rent, loan_emi, utility, tax, supplier_invoice, contractor, marketing, subscription, misc>",
       "description": "<string>"
     }
   ]
 }
+Category classification rules:
+- rent: Rent payments, lease agreements, property-related charges.
+- loan_emi: Bank EMI, loan repayments, interest payments on credit.
+- utility: Electricity, water, gas, internet, phone bills.
+- tax: GST payments, income tax, TDS, professional tax, government fees.
+- supplier_invoice: Raw materials, inventory, goods purchased from vendors/suppliers.
+- contractor: Freelancer payments, labour charges, outsourced service fees.
+- marketing: Advertising, promotions, Swiggy/Zomato ads, social media spend.
+- subscription: SaaS tools, software licenses, recurring digital services.
+- misc: Anything that does not clearly fit the above categories.
+- For inflow transactions (income, sales, receivables): use "misc" as category.
+
 Indian document rules:
 - Amounts written in Indian format (e.g. 1,05,200.00) must be converted to plain floats (105200.0).
 - GST line items (CGST, SGST, IGST) must be summed with the base amount into one transaction.
@@ -193,6 +206,7 @@ async def parse_document(file: UploadFile, business_id: str) -> IngestResponse:
             amount=tx["amount"],
             transaction_date=tx["date"],
             transaction_type=tx["type"],
+            category=tx.get("category", "misc"),
             raw_description=tx.get("description", ""),
         )
         for tx in raw_json.get("transactions", [])

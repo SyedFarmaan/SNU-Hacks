@@ -32,6 +32,7 @@ Return ONLY a single valid JSON object with no markdown, no prose, no extra keys
       "amount": <positive number — always a number, never a string>,
       "date": "<YYYY-MM-DD>",
       "type": "<inflow or outflow>",
+      "category": "<one of: rent, loan_emi, utility, tax, supplier_invoice, contractor, marketing, subscription, misc>",
       "description": "<verbatim user text>"
     }
   ]
@@ -41,6 +42,16 @@ Rules:
 - document_type must always be the string receipt for chat entries.
 - Payments, expenses, purchases, fees → type must be outflow.
 - Received, income, sale proceeds → type must be inflow.
+- category must be inferred from the context of the transaction:
+  - rent: rent, lease, property payments.
+  - loan_emi: EMI, loan, interest repayments.
+  - utility: electricity, water, gas, internet, phone bills.
+  - tax: GST, TDS, income tax, government fees.
+  - supplier_invoice: raw materials, inventory, supplies, goods from vendors.
+  - contractor: freelancer, labour, outsourced work.
+  - marketing: ads, promotions, Swiggy/Zomato ads.
+  - subscription: SaaS, software, recurring digital services.
+  - misc: anything that does not clearly fit above, or inflow transactions.
 - Resolve relative dates (yesterday, last Monday) against today's date provided below.
 - If no date is mentioned by the user, use today's date as the transaction date.
 - If amount is absent from the user message, return an empty transactions array.
@@ -134,6 +145,7 @@ def _build_transaction(tx: dict, fallback_description: str) -> ParsedTransaction
             amount=float(raw_amount),
             transaction_date=raw_date,
             transaction_type=raw_type,
+            category=tx.get("category") or "misc",
             raw_description=tx.get("description") or fallback_description,
         )
     except (ValidationError, ValueError, TypeError) as exc:

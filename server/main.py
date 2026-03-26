@@ -5,6 +5,7 @@ from controllers.ingest_controller import router as ingest_router
 from controllers.runway_controller import router as runway_router
 from controllers.decide_controller import router as decide_router
 from controllers.recommend_controller import router as recommend_router
+from controllers.transactions_controller import router as transactions_router
 
 app = FastAPI(
     title="CashFlow Copilot API",
@@ -35,6 +36,9 @@ app.include_router(decide_router, prefix="/api", tags=["Layer 3 — Decision"])
 
 # Layer 4 — Recommendation Engine (Gemini Pro)
 app.include_router(recommend_router, prefix="/api", tags=["Layer 4 — Recommendation"])
+
+# Transactions — Obligations Ledger CRUD
+app.include_router(transactions_router, prefix="/api", tags=["Transactions"])
 
 
 @app.get("/", tags=["Health"])

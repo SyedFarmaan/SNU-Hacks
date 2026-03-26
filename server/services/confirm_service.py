@@ -27,11 +27,11 @@ async def confirm_transactions(request: ConfirmRequest) -> ConfirmResponse:
         ConfirmResponse with inserted_count and list of transaction UUIDs.
     """
     supabase = get_supabase()
-    default_flexibility = auto_infer_flexibility("misc")
 
     rows = []
     for tx in request.transactions:
-        category = "receivable" if tx.transaction_type == "inflow" else "payable"
+        category = tx.category if tx.category else "misc"
+        flexibility = auto_infer_flexibility(category)
         rows.append({
             "business_id": request.business_id,
             "counterparty": tx.counterparty,
@@ -42,7 +42,7 @@ async def confirm_transactions(request: ConfirmRequest) -> ConfirmResponse:
             "status": "paid" if request.document_type == "bank_statement" else "pending",
             "source": request.document_type,
             "category": category,
-            "flexibility": default_flexibility,
+            "flexibility": flexibility,
         })
 
     result = supabase.table("transactions").insert(rows).execute()

@@ -83,8 +83,8 @@ def _build_prompt(request: RecommendRequest) -> str:
 
     payload = {
         "chosen_scenario": request.chosen_scenario_name,
-        "days_to_zero_delta": request.scenario.days_to_zero_delta,
-        "total_penalty_if_deferred": request.scenario.total_penalty_if_deferred,
+        "min_balance": request.scenario.min_balance,
+        "total_penalties": request.scenario.total_penalties,
         "pay_list": pay_summaries,
         "defer_list": defer_summaries,
         "counterparty_profiles": profile_map,
