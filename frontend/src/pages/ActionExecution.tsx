@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Brain, ListTodo, Landmark, Eye, PlayCircle, Mail, Edit, Paperclip, Info, X, CheckCircle2 } from 'lucide-react';
+import { Brain, ListTodo, Landmark, Eye, PlayCircle, X, CheckCircle2 } from 'lucide-react';
 
 export default function ActionExecution() {
     const [modalOpen, setModalOpen] = useState(false);
 
     return (
-        <div className="flex-grow p-8 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
+        <div className="flex-grow p-8 max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
             {/* Column 1: Decision Logic (Left) */}
-            <section className="lg:col-span-3 space-y-6">
+            <section className="space-y-6">
                 <div className="bg-[#f4f5f7] p-6 rounded-sm border border-[#c3c6d6]/50 h-full">
                     <div className="flex items-center gap-2 mb-6">
                         <Brain className="w-5 h-5 text-primary" />
@@ -48,8 +48,8 @@ export default function ActionExecution() {
                 </div>
             </section>
 
-            {/* Column 2: Checklist & Execution (Center) */}
-            <section className="lg:col-span-5 space-y-6">
+            {/* Column 2: Checklist & Execution (Right) */}
+            <section className="space-y-6">
                 <div className="bg-white p-6 rounded-sm border border-[#c3c6d6]/50 shadow-sm h-full flex flex-col">
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-2">
@@ -113,67 +113,6 @@ export default function ActionExecution() {
                             <PlayCircle className="w-5 h-5" />
                             Execute Approved Plan
                         </button>
-                    </div>
-                </div>
-            </section>
-
-            {/* Column 3: Communication (Right) */}
-            <section className="lg:col-span-4 space-y-6">
-                <div className="bg-white p-6 rounded-sm border border-[#c3c6d6]/50 shadow-sm h-full flex flex-col">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Mail className="w-5 h-5 text-primary" />
-                        <h2 className="text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Vendor Correspondence</h2>
-                    </div>
-
-                    <div className="flex-grow flex flex-col bg-white border border-[#c3c6d6]/20 rounded-sm overflow-hidden">
-                        {/* Header */}
-                        <div className="p-4 bg-surface-container-low border-b border-[#c3c6d6]/30">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-on-surface-variant uppercase">Recipient</span>
-                                <span className="text-xs text-primary font-medium">accounts@apex-logistics.com</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-on-surface-variant uppercase">Subject</span>
-                                <span className="text-xs text-on-surface truncate ml-4">Payment Extension Request - INV #AL-882</span>
-                            </div>
-                        </div>
-
-                        {/* Body */}
-                        <div className="p-6 flex-grow">
-                            <div className="text-sm text-on-surface leading-relaxed space-y-4">
-                                <p>Dear Accounts Team,</p>
-                                <p>We are currently undergoing a scheduled treasury audit which has necessitated a brief administrative pause on high-volume accounts payable.</p>
-                                <p>As per our long-standing partnership and Section 4.2 of our service agreement, we are exercising our 15-day grace period for <span className="bg-secondary-container px-1 font-medium rounded-sm">Invoice #AL-882</span>. Funds are scheduled for release on October 24th.</p>
-                                <p>Thank you for your continued partnership.</p>
-                                <p>Best Regards,<br /><span className="font-bold">Finaxis Concierge (AI)</span></p>
-                            </div>
-                        </div>
-
-                        {/* Footer / Actions */}
-                        <div className="p-4 bg-surface-container-low flex items-center justify-between">
-                            <div className="flex gap-2">
-                                <button className="p-2 rounded-sm bg-white border border-[#c3c6d6]/50 hover:bg-[#e8edff] transition-all cursor-pointer">
-                                    <Edit className="w-4 h-4 text-on-surface-variant" />
-                                </button>
-                                <button className="p-2 rounded-sm bg-white border border-[#c3c6d6]/50 hover:bg-[#e8edff] transition-all cursor-pointer">
-                                    <Paperclip className="w-4 h-4 text-on-surface-variant" />
-                                </button>
-                            </div>
-                            <button className="px-4 py-2 bg-primary border-none text-white text-xs font-bold rounded-sm hover:bg-[#002f7a] cursor-pointer transition-colors">
-                                Send Manual Override
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Contextual Awareness */}
-                    <div className="mt-6 p-4 bg-[#f1f3ff] rounded-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Info className="w-4 h-4 text-primary" />
-                            <span className="text-xs font-bold text-primary uppercase tracking-tight">Strategic Context</span>
-                        </div>
-                        <p className="text-xs text-on-surface-variant italic">
-                            "Apex Logistics typically grants extensions to 85% of their premium partners. Probability of acceptance without late fees: 92%."
-                        </p>
                     </div>
                 </div>
             </section>
