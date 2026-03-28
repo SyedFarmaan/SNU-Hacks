@@ -13,8 +13,7 @@ import {
 } from 'lucide-react';
 import { fetchDecision } from '../services/decideApi';
 import type { DecideResponse, Scenario, Obligation } from '../services/decideApi';
-
-const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+import { useBusinessContext } from '../context/BusinessContext';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -305,6 +304,9 @@ function ObligationsTable({ obligations, deferredIds }: ObligationsTableProps) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function DecisionSandbox() {
+  const { selectedBusiness } = useBusinessContext();
+  const BUSINESS_ID = selectedBusiness?.id ?? '';
+
   const [data, setData] = useState<DecideResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

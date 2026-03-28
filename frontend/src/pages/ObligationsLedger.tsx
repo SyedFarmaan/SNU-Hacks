@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowUp, ArrowDown, Search, Loader2, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { fetchTransactions, createTransaction } from '../services/transactionsApi';
 import type { TransactionsListResponse, CreateTransactionPayload } from '../services/transactionsApi';
-
-const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+import { useBusinessContext } from '../context/BusinessContext';
 
 const CATEGORY_OPTIONS = [
     'rent', 'loan_emi', 'utility', 'tax',
@@ -37,6 +36,9 @@ function getInitials(name: string): string {
 }
 
 export default function ObligationsLedger() {
+    const { selectedBusiness } = useBusinessContext();
+    const BUSINESS_ID = selectedBusiness?.id ?? '';
+
     const [data, setData] = useState<TransactionsListResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

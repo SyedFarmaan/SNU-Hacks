@@ -4,8 +4,7 @@ import { fetchDecision } from '../services/decideApi';
 import { fetchRecommendation } from '../services/recommendApi';
 import type { DecideResponse, Scenario } from '../services/decideApi';
 import type { RecommendResponse } from '../services/recommendApi';
-
-const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+import { useBusinessContext } from '../context/BusinessContext';
 
 // Map recommended_scenario name to the scenario key
 function getRecommendedScenario(decide: DecideResponse): { key: string; scenario: Scenario } {
@@ -16,6 +15,9 @@ function getRecommendedScenario(decide: DecideResponse): { key: string; scenario
 }
 
 export default function ActionExecution() {
+    const { selectedBusiness } = useBusinessContext();
+    const BUSINESS_ID = selectedBusiness?.id ?? '';
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [decide, setDecide] = useState<DecideResponse | null>(null);
@@ -74,7 +76,7 @@ export default function ActionExecution() {
             <div className="flex-grow flex flex-col items-center justify-center gap-4 p-8">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 <p className="text-sm text-on-surface-variant">
-                    {phase === 'decide' ? 'Running decision engine...' : 'Generating AI recommendations...'}
+                    {phase === 'decide' ? 'Running decision engine...' : 'Generating recommendations...'}
                 </p>
             </div>
         );

@@ -17,6 +17,12 @@
   --color-inverse-surface: #1d3052;
 }
 
+@layer base {
+  html {
+    font-size: 16px;
+  }
+}
+
 @layer utilities {
   .tracking-tight-custom {
     letter-spacing: -0.015em;

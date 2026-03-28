@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useBusinessContext } from '../context/BusinessContext';
 import {
   UploadCloud,
   FileText,
@@ -26,7 +27,6 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -129,6 +129,9 @@ function StepBar({ status, source }: { status: PageStatus; source: ActiveTab }) 
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function DocumentIntelligence() {
+  const { selectedBusiness } = useBusinessContext();
+  const BUSINESS_ID = selectedBusiness?.id ?? '';
+
   // ── Tab + status ──
   const [activeTab, setActiveTab] = useState<ActiveTab>('upload');
   const [dataSource, setDataSource] = useState<ActiveTab>('upload');
@@ -669,7 +672,7 @@ export default function DocumentIntelligence() {
             <p className="text-sm text-[#434654] mt-1">
               {dataSource === 'chat'
                 ? 'NLP engine is extracting entities and amounts...'
-                : 'Gemini Flash is extracting transactions from your document...'}
+                : 'The system is extracting transactions from your document...'}
             </p>
           )}
         </div>

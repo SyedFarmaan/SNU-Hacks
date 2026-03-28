@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from controllers.businesses_controller import router as businesses_router
 from controllers.ingest_controller import router as ingest_router
 from controllers.runway_controller import router as runway_router
 from controllers.decide_controller import router as decide_router
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Businesses — selector
+app.include_router(businesses_router, prefix="/api", tags=["Businesses"])
 
 # Layer 1 — Document Ingestion (Gemini Flash)
 app.include_router(ingest_router, prefix="/api", tags=["Layer 1 — Ingestion"])

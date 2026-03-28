@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
-import { AlertTriangle, AlertCircle, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle, AlertCircle, TrendingUp, TrendingDown, Wallet, RefreshCw } from 'lucide-react';
 import { fetchRunway } from '../services/runwayApi';
 import type { RunwayResponse, TimelineEntry } from '../services/runwayApi';
-
-const BUSINESS_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
+import { useBusinessContext } from '../context/BusinessContext';
 
 // Indian numbering system: e.g. 181001 -> "1,81,001"
 function formatINR(value: number): string {
@@ -188,19 +187,28 @@ function RunwayChart({ timeline, currentBalance }: RunwayChartProps) {
 // ─── CashFlowForecast ────────────────────────────────────────────────────────
 
 export default function CashFlowForecast() {
+  const { selectedBusiness } = useBusinessContext();
+  const BUSINESS_ID = selectedBusiness?.id ?? '';
+
   const [data, setData] = useState<RunwayResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     fetchRunway(BUSINESS_ID)
       .then(res => { setData(res); setLoading(false); })
       .catch((err: Error) => { setError(err.message); setLoading(false); });
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  // Fetch on mount and whenever the user navigates back to this tab/page
+  useEffect(() => {
+    load();
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [load]);
 
   if (loading) {
     return (
@@ -264,18 +272,17 @@ export default function CashFlowForecast() {
   return (
     <div className="space-y-8 max-w-[1440px] mx-auto px-8 py-8 relative">
 
-      {/* Emergency banner — only when days_to_zero <= 30 */}
-      {showBanner && (
-        <div className="w-[100vw] relative left-1/2 -translate-x-1/2 max-w-none bg-[#ba1a1a] text-white py-2 px-8 flex items-center justify-center gap-3 shadow-md -mt-8 mb-8">
-          <AlertTriangle size={14} />
-          <p className="text-xs font-semibold tracking-tight uppercase m-0">
-            Cash shortfall of &#8377;{formatINR(data.liquidity_gap)} detected &mdash;{' '}
-            {data.days_to_zero === 0
-              ? 'IMMEDIATE ACTION REQUIRED'
-              : `${data.days_to_zero} days remaining`}
-          </p>
-        </div>
-      )}
+      {/* ── Refresh button ── */}
+      <div className="flex justify-end">
+        <button
+          onClick={load}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-on-surface-variant bg-white border border-[#c3c6d6]/50 rounded-sm hover:bg-surface-container-low transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
 
       {/* ── Hero KPI Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

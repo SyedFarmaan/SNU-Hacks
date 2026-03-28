@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Receipt, FileText, Wallet, LineChart } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Receipt, FileText, Wallet, LineChart, Building2, ChevronsUpDown } from 'lucide-react';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useBusinessContext } from '../context/BusinessContext';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -18,6 +19,13 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { selectedBusiness, setSelectedBusiness } = useBusinessContext();
+
+    function handleSwitch() {
+        setSelectedBusiness(null);
+        navigate('/select-business');
+    }
 
     return (
         <div className="min-h-screen bg-background text-on-background flex font-sans">
@@ -54,15 +62,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </nav>
                 </div>
                 <div className="mt-auto p-6">
-                    <div className="bg-surface p-4 rounded-sm flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center text-xs font-bold">
-                            SA
+                    <button
+                        onClick={handleSwitch}
+                        className="w-full bg-surface p-4 rounded-sm flex items-center gap-3 hover:bg-surface-container transition-colors text-left group"
+                        title="Switch business"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                            <Building2 className="w-4 h-4 text-primary" />
                         </div>
-                        <div>
-                            <p className="text-sm font-bold m-0 leading-tight">System Admin</p>
-                            <p className="text-xs text-on-surface-variant m-0">Finaxis HQ</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold m-0 leading-tight truncate">
+                                {selectedBusiness?.name ?? 'No business'}
+                            </p>
+                            <p className="text-xs text-on-surface-variant m-0 truncate">
+                                {selectedBusiness?.owner_email ?? ''}
+                            </p>
                         </div>
-                    </div>
+                        <ChevronsUpDown className="w-4 h-4 text-on-surface-variant shrink-0 group-hover:text-primary transition-colors" />
+                    </button>
                 </div>
             </aside>
 
